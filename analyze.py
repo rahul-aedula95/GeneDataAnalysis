@@ -18,8 +18,7 @@ class geneExtract:
 
 		X_pca = self.pca_transformer(X)
 
-
-
+		self.pca_plotter(X_pca)
 
 
 		
@@ -32,16 +31,25 @@ class geneExtract:
 
 	def pca_transformer(self,X):
 
-		pca = PCA(n_components=2)
-		x_new = pca.fit_transform()
+		pca = PCA(n_components=3)
+		x_new = pca.fit_transform(X)
 
 		return (x_new)
 
 
 	def pca_plotter(self,X):
 
+		pca1 = np.delete(X,[1,2],axis=1)
+		pca2 = np.delete(X,[0,2],axis=1)
+		pca3 = np.delete(X,[0,1],axis=1)
+
+		print (np.shape(pca1))
 
 
+		sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b')
+		sns.scatterplot(x=pca1.ravel(),y=pca3.ravel(),color='g')
+		#sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b',alpha=0.1)
+		plt.show()
 
 
 
