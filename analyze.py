@@ -11,13 +11,9 @@ class geneExtract:
 	def __init__(self):
 
 		df = pd.read_csv('~/Independent_study/Data/datOwnDatasetTranspose.csv')
-
-		X = df.values
-		
+		X = df.values		
 		X = self.preprocess_remove_text(X)
-
 		X_pca = self.pca_transformer(X)
-
 		self.pca_plotter(X_pca)
 
 
