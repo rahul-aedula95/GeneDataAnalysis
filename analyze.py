@@ -10,9 +10,18 @@ class geneExtract:
 
 	def __init__(self):
 
-		df = pd.read_csv('~/Independent_study/Data/datOwnDatasetTranspose.csv')
+		df = pd.read_csv('~/IS/Data/lukk.csv',sep="\t")
+		df = df.drop([0],axis=0)
+		df = df.set_index(['Hybridization REF']) 
+		row,col = df.shape
+		
+		df = df.astype(np.float64)
+		print (df.dtypes)
+
+		
 		X = df.values		
 		X = self.preprocess_remove_text(X)
+		X = np.transpose(X)
 		X_pca = self.pca_transformer(X)
 		self.pca_plotter(X_pca)
 
@@ -43,7 +52,7 @@ class geneExtract:
 
 
 		sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b')
-		sns.scatterplot(x=pca1.ravel(),y=pca3.ravel(),color='g')
+		#sns.scatterplot(x=pca1.ravel(),y=pca3.ravel(),color='g')
 		#sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b',alpha=0.1)
 		plt.show()
 
