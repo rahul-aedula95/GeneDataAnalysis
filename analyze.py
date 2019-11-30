@@ -12,52 +12,68 @@ class geneExtractLukk:
 	def __init__(self):
 
 		df = pd.read_csv('~/IS/Data/lukk.csv',sep="\t")
-		df = df.drop([0],axis=0)
-		df = df.set_index(['Hybridization REF']) 
-		row,col = df.shape
+		df_supplement = pd.read_csv('~/IS/Data/AnnoEmtab62_new.csv',sep=",")
 		
-		df = df.astype(np.float64)
-		print (df.dtypes)
+		print (df_supplement)
 
+		
+		df = df.T
+		
+		df = df.drop([0],axis=1)
+		df = df.drop(df.index[0])
+		
+		self.df_supplement = pd.DataFrame()
+		#self.df_supplement['label'] = df_supplement['Factor.Value.4.groups.from.blood.to.incompletely.diff.']
+		self.df_supplement['label'] = df_supplement['Characteristics.4.meta.groups.']
+
+		print (df.values)
 		
 		X = df.values		
-		X = self.preprocess_remove_text(X)
-		X = np.transpose(X)
 		X_pca = self.pca_transformer(X)
-		self.pca_plotter(X_pca)
+		self.data_set(X_pca)
+		#self.pca_plotter()
 
-
+		gc.collect()
 		
-	def preprocess_remove_text(self,X):
-		
-		x_new = np.delete(X,[0],axis=1)
-
-		return (x_new)
-
-
+	
 	def pca_transformer(self,X):
 
-		pca = PCA(n_components=3)
+		pca = PCA(n_components=4)
 		x_new = pca.fit_transform(X)
 
 		return (x_new)
 
+	def shift_axis(self,x):
 
-	def pca_plotter(self,X):
+		return (x*-1)
+	
 
-		pca1 = np.delete(X,[1,2,3],axis=1)
-		pca2 = np.delete(X,[0,2,3],axis=1)
-		pca3 = np.delete(X,[0,1,3],axis=1)
-		pca3 = np.delete(X,[0,1,2],axis=1)
+	def data_set(self,X):
 
-		print (np.shape(pca1))
+		self.df_supplement['lpca1'] = np.delete(X,[1,2,3],axis=1)
+		#self.df_supplement['lpca1'] = self.df_supplement['lpca1'].swifter.apply(self.shift_axis)
+		self.df_supplement['lpca2'] = np.delete(X,[0,2,3],axis=1)
+		#self.df_supplement['lpca2'] = self.df_supplement['lpca2'].swifter.apply(self.shift_axis)
+		self.df_supplement['lpca3'] = np.delete(X,[0,1,3],axis=1)
+		#self.df_supplement['lpca3'] = self.df_supplement['lpca3'].swifter.apply(self.shift_axis)
+		self.df_supplement['lpca4'] = np.delete(X,[0,1,2],axis=1)
+		#self.df_supplement['lpca4'] = self.df_supplement['lpca4'].swifter.apply(self.shift_axis)
 
 
-		sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b')
+
+	def pca_plotter(self):	
+
+
+		sns.scatterplot(x='pca1',y='pca2',hue='label',data=self.df_supplement)
+		#sns.scatterplot(x='pca3',y='pca4',hue='label',data=self.df_supplement)
 		#sns.scatterplot(x=pca1.ravel(),y=pca3.ravel(),color='g')
 		#sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b',alpha=0.1)
+		#plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 		plt.show()
 
+	def get_frame(self):
+
+		return(self.df_supplement)
 
 class geneExtractOwn:
 
@@ -69,17 +85,15 @@ class geneExtractOwn:
 		df_supplement = pd.read_excel('~/IS/Data/st.xls')
 		print ("Supplementary Read")
 		#print (df_supplement.columns)
-		#df_supplement = df_supplement.rename(columns={"groupLabel (192 groups) ": "label"})
+		
 
 		self.df_supplement = pd.DataFrame()
-		self.df_supplement['label'] = df_supplement['groupLabel (192 groups) ']
-		df_supplement = pd.DataFrame()
-		#print (df_supplement)
+		self.df_supplement['label'] = df_supplement[['Large-scale group','groupLabel (192 groups) ']].apply(self.liver_sample_initiate,axis=1)
 
 		
 
-		# df = self.dataframe_transpose(df)
-
+		df_supplement = pd.DataFrame()
+		
 		X = df.values		
 		X = self.preprocess_remove_text(X)
 		X = np.transpose(X)
@@ -88,7 +102,7 @@ class geneExtractOwn:
 		
 		self.data_set(X_pca)
 		
-		self.pca_plotter()
+		#self.pca_plotter()
 		
 		gc.collect()
 		
@@ -99,9 +113,17 @@ class geneExtractOwn:
 		self.df_supplement['pca1'] = self.df_supplement['pca1'].swifter.apply(self.shift_axis)
 		self.df_supplement['pca2'] = np.delete(X,[0,2,3],axis=1)
 		self.df_supplement['pca3'] = np.delete(X,[0,1,3],axis=1)
-		self.df_supplement['pca3'] = self.df_supplement['pca3'].swifter.apply(self.shift_axis)
+		#self.df_supplement['pca3'] = self.df_supplement['pca3'].swifter.apply(self.shift_axis)
 		self.df_supplement['pca4'] = np.delete(X,[0,1,2],axis=1)
-		self.df_supplement['pca4'] = self.df_supplement['pca4'].swifter.apply(self.shift_axis)
+		#self.df_supplement['pca4'] = self.df_supplement['pca4'].swifter.apply(self.shift_axis)
+
+	def liver_sample_initiate(self, x):
+
+		if 'Liver' in str(x[1]):
+
+			return 'Liver'
+		else:
+			return x[0]	
 
 
 	def shift_axis(self,x):
@@ -131,18 +153,90 @@ class geneExtractOwn:
 	def pca_plotter(self):	
 
 
-		#sns.scatterplot(x='pca1',y='pca2',hue='label',data=self.df_supplement,legend=False)
-		sns.scatterplot(x='pca3',y='pca4',hue='label',data=self.df_supplement,legend=False)
+		sns.scatterplot(x='pca1',y='pca2',hue='label',data=self.df_supplement)
+		#sns.scatterplot(x='pca3',y='pca4',hue='label',data=self.df_supplement,alpha=0.9)
 		#sns.scatterplot(x=pca1.ravel(),y=pca3.ravel(),color='g')
 		#sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b',alpha=0.1)
 		#plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 		plt.show()
+
+	def get_frame(self):
+
+		return(self.df_supplement)
+
+
+class correlateDatasets:
+
+	def __init__(self,df1,df2):
+
+		
+		df1 = self.preprocess_frame(df1)
+		df2 = self.preprocess_frame(df2)
+		frames = [df1,df2]
+		self.final_frame = pd.concat(frames, axis=1, ignore_index=False, sort=False)
+		print(self.final_frame)
+		#print (df1['pca1'].shape)
+		#print (df2['lpca1'].shape)
+		#print (df1['pca1'].corr(df2['lpca1']))
+		self.plot_correlation()
+		gc.collect()
+
+	def preprocess_frame(self,df):
+
+		return(df.drop(['label'],axis=1))
+
+
+
+	def plot_correlation(self):
+
+		#sns.lineplot(x=self.final_frame.index,y='pca1',data=self.final_frame)
+		#sns.lineplot(y='lpca1',x=self.final_frame.index,data=self.final_frame)
+		# df3 = pd.DataFrame()
+
+		# x=self.final_frame.index
+		# y = list(self.final_frame['pca1'])
+		# y.extend(list(self.final_frame['lpca1']))
+		# df3['y'] = y
+
+		# y = df3['y']
+		# print (y.shape)
+		
+		sns.jointplot("lpca1", "pca3", data=self.final_frame, kind="reg")
+		#sns.jointplot("lpca2", "pca2", data=self.final_frame, kind="reg")
+		#sns.jointplot("lpca3", "pca3", data=self.final_frame, kind="reg")
+		#sns.jointplot("lpca4", "pca4", data=self.final_frame, kind="reg")
+		# #sns.jointplot(x, y, kind="hex", color="#4CB391")
+		# y = y.extend(list(self.final_frame['lpca1']))
+		# sns.jointplot(x, y, ki =nd="hex", color="#4CB391")
+
+		#sns.pairplot(self.final_frame,x_vars=["pca1","pca2","pca3","pca4"],y_vars=["lpca1","lpca2","lpca3","lpca4"])
+		
+		# graph = sns.jointplot(x=x, y=y, color='g')
+
+		# graph.x = x
+		# graph.y = self.final_frame['lpca1']
+		# graph.plot_joint(plt.scatter, marker='x', c='b', s=50)
+
+
+
+		plt.show()
+
+		
 
 
 
 if __name__ == '__main__':
 
 
-	#x = geneExtractLukk()
-	test = geneExtractOwn()
+	lukk = geneExtractLukk()
+
+	lukk_frame = lukk.get_frame()
+
+	dataOwn = geneExtractOwn()
+
+	own_frame = dataOwn.get_frame()
+
+
+	correlate = correlateDatasets(own_frame,lukk_frame)
+
 
