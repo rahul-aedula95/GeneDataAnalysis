@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import gc
 import swifter
+from MulticoreTSNE import MulticoreTSNE as TSNE
+import multiprocessing
 
 
 class geneExtractLukk:
@@ -29,6 +31,7 @@ class geneExtractLukk:
 		print (df.values)
 		
 		X = df.values		
+		self.df = X
 		X_pca = self.pca_transformer(X)
 		self.data_set(X_pca)
 		#self.pca_plotter()
@@ -73,7 +76,7 @@ class geneExtractLukk:
 
 	def get_frame(self):
 
-		return(self.df_supplement)
+		return(self.df)
 
 class geneExtractOwn:
 
@@ -97,6 +100,7 @@ class geneExtractOwn:
 		X = df.values		
 		X = self.preprocess_remove_text(X)
 		X = np.transpose(X)
+		self.X = X
 		
 		X_pca = self.pca_transformer(X)
 		
@@ -162,7 +166,7 @@ class geneExtractOwn:
 
 	def get_frame(self):
 
-		return(self.df_supplement)
+		return(self.X,self.df_supplement['label'])
 
 
 class correlateDatasets:
@@ -221,22 +225,66 @@ class correlateDatasets:
 
 		plt.show()
 
-		
+class extendedAnalysis:
+
+	def __init__(self,df,label):
+
+		#df = df.drop(['label'],axis=1)
+		self.data = df
+
+		self.tsne_df = pd.DataFrame()
+		self.tsne_df['label'] = label
+
+		self.perform_analysis()
+		gc.collect()
+
+
+	def perform_analysis(self):
+		self.tsne_prepare(self.data)
+
+
+	def tsne_prepare(self,df):
+
+		X = df
+
+		print (X)
+
+		tsne = TSNE(n_components=2,perplexity=75,learning_rate=10,n_jobs=multiprocessing.cpu_count(),n_iter=5000)
+
+		Y = tsne.fit_transform(X)
+
+		#print (type(Y))
+		k = np.delete(Y,1,axis=1).ravel()
+		m = np.delete(Y,0,axis=1).ravel()
+		#print (np.shape(k))
+
+		self.tsne_df['x'] = k
+		self.tsne_df['y'] = m
+
+		self.plot_results(self.tsne_df,"x","y")
+
+
+	def plot_results(self,df,x,y):
+
+		sns.scatterplot(x=x,y=y,hue='label',data=df)
+		plt.show()
+
 
 
 
 if __name__ == '__main__':
 
 
-	lukk = geneExtractLukk()
+	#lukk = geneExtractLukk()
 
-	lukk_frame = lukk.get_frame()
+	#lukk_frame = lukk.get_frame()
 
 	dataOwn = geneExtractOwn()
 
-	own_frame = dataOwn.get_frame()
+	own_mat,label = dataOwn.get_frame()
 
+	analyze = extendedAnalysis(own_mat,label)
 
-	correlate = correlateDatasets(own_frame,lukk_frame)
+	#correlate = correlateDatasets(own_frame,lukk_frame)
 
 
