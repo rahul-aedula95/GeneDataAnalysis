@@ -225,7 +225,7 @@ class correlateDatasets:
 
 		plt.show()
 
-class extendedAnalysis:
+class tsneAnalysis:
 
 	def __init__(self,df,label):
 
@@ -269,6 +269,19 @@ class extendedAnalysis:
 		sns.scatterplot(x=x,y=y,hue='label',data=df)
 		plt.show()
 
+	
+
+class extendedAnalysis:
+
+	def __init__(self):
+		pass
+
+	def preprcessor(label):
+
+
+		x = label.cat.encode(label)
+
+		print (x)
 
 
 
