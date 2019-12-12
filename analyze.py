@@ -7,7 +7,11 @@ import gc
 import swifter
 from MulticoreTSNE import MulticoreTSNE as TSNE
 import multiprocessing
-
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import svm
 
 class geneExtractLukk:
 
@@ -82,6 +86,8 @@ class geneExtractOwn:
 
 	def __init__(self):
 
+		
+
 		df = pd.read_csv('~/IS/Data/dataownnew.csv')
 		print ("Read Done")
 
@@ -102,23 +108,63 @@ class geneExtractOwn:
 		X = np.transpose(X)
 		self.X = X
 		
-		X_pca = self.pca_transformer(X)
 		
-		self.data_set(X_pca)
 		
 		#self.pca_plotter()
 		
 		gc.collect()
 		
+	
+
+	def collect_components(self,components):
+
+		self.components = components
+
+		X_pca = self.pca_transformer(self.X)
 		
+		df = self.data_set(X_pca)
+
+		df['label'] = self.df_supplement['label']
+
+		return(df)
+
+		
+
 	def data_set(self,X):
 
-		self.df_supplement['pca1'] = np.delete(X,[1,2,3],axis=1)
-		self.df_supplement['pca1'] = self.df_supplement['pca1'].swifter.apply(self.shift_axis)
-		self.df_supplement['pca2'] = np.delete(X,[0,2,3],axis=1)
-		self.df_supplement['pca3'] = np.delete(X,[0,1,3],axis=1)
+		df_supplement = pd.DataFrame()
+
+		delete_list = list(range(0,self.components))
+
+		index = 0
+		for i in range(0,self.components):
+
+			col_name = 'pca' + str(i)
+			#print (col_name)
+			#print (np.shape(np.delete(X,[j for j in delete_list if j !=i],axis=1)))
+			k = np.delete(X,[j for j in delete_list if j !=i],axis=1).ravel()
+			#print (len(k))
+			df_supplement[col_name] = k
+			#df_supplement[col_name] = np.delete(X,[j for j in delete_list if j !=i],axis=1).reshape(-1,1)
+			index +=1
+			#print (df_supplement)
+
+		col_name = 'pca' + str(index)
+		k = np.delete(X,[j for j in delete_list if j !=index],axis=1).ravel()
+		
+		return (df_supplement)
+			
+
+
+
+
+
+		#self.df_supplement['pca1'] = np.delete(X,[1,2,3],axis=1)
+		#self.df_supplement['pca1'] = self.df_supplement['pca1'].swifter.apply(self.shift_axis)
+		#self.df_supplement['pca2'] = np.delete(X,[0,2,3],axis=1)
+		#self.df_supplement['pca3'] = np.delete(X,[0,1,3],axis=1)
 		#self.df_supplement['pca3'] = self.df_supplement['pca3'].swifter.apply(self.shift_axis)
-		self.df_supplement['pca4'] = np.delete(X,[0,1,2],axis=1)
+		#self.df_supplement['pca4'] = np.delete(X,[0,1,2],axis=1)
 		#self.df_supplement['pca4'] = self.df_supplement['pca4'].swifter.apply(self.shift_axis)
 
 	def liver_sample_initiate(self, x):
@@ -148,7 +194,7 @@ class geneExtractOwn:
 
 	def pca_transformer(self,X):
 
-		pca = PCA(n_components=4)
+		pca = PCA(n_components=self.components)
 		x_new = pca.fit_transform(X)
 
 		return (x_new)
@@ -166,7 +212,7 @@ class geneExtractOwn:
 
 	def get_frame(self):
 
-		return(self.X,self.df_supplement['label'])
+		return(self.df_supplement)
 
 
 class correlateDatasets:
@@ -273,15 +319,142 @@ class tsneAnalysis:
 
 class extendedAnalysis:
 
-	def __init__(self):
-		pass
+	def __init__(self,data):
 
-	def preprcessor(label):
+		
+
+		X,y = self.preprcessor(data)
+
+		self.X_train,self.X_test,self.y_train,self.y_test = self.kfold(X,y)
 
 
-		x = label.cat.encode(label)
+		#print (self.X_test)
+		#print (len(self.X_test))
+				
+		gc.collect()
 
-		print (x)
+	def collect_results(self):
+
+		log_acc = self.log_project()
+		rf_acc = self.random_forest_project()
+		svm_acc = self.svm_project()
+		
+		return (log_acc,rf_acc,svm_acc)
+
+
+	def preprcessor(self,df):
+
+		y = df['label']
+		y = y.astype('category')
+		df = df.drop(['label'],axis=1)		
+		X = df.values
+
+		y_encode = y.cat.codes
+		return(X,y_encode.values)
+
+
+	def kfold(self,X,y):
+
+		skf = StratifiedKFold(n_splits=5,shuffle=True)
+
+		for train_index, test_index in skf.split(X, y):
+			#print("TRAIN:", train_index, "TEST:", test_index)
+			X_train, X_test = X[train_index], X[test_index]
+			y_train, y_test = y[train_index], y[test_index]
+
+
+		return (X_train,X_test,y_train,y_test)
+
+
+	def confusion(self,y_pred,y_true):
+		y_true = pd.Series(y_true)
+		y_pred = pd.Series(y_pred)
+
+		print (pd.crosstab(y_true, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+
+	def log_project(self):
+		
+		clf = LogisticRegression(solver='saga',class_weight='balanced', n_jobs=8,penalty='l1')
+		clf.fit(self.X_train,self.y_train)
+		
+		print ("The mean accuracy score for the training data set is ",clf.score(self.X_train,self.y_train))
+
+		y_pred =  clf.predict(self.X_test)
+
+
+		print ("The mean accuracy score for the testing data set is ",accuracy_score(y_pred,self.y_test))
+
+		# prob =  clf.predict_proba(self.X_test)
+		
+		self.confusion(y_pred,self.y_test)
+
+		return (accuracy_score(y_pred,self.y_test))
+
+
+	def random_forest_project(self):
+		
+		clf = RandomForestClassifier(n_estimators=25,oob_score=True, n_jobs=multiprocessing.cpu_count(),class_weight='balanced',min_samples_split=20,max_features=4, min_samples_leaf=1,max_leaf_nodes=None)
+
+
+		clf.fit(self.X_train,self.y_train)
+
+		print ("The mean accuracy score for the training data set is ",clf.score(self.X_train,self.y_train))
+
+		
+		y_pred = clf.predict(self.X_test)
+
+
+		print ("The mean accuracy score for the testing data set is ",accuracy_score(y_pred,self.y_test))
+
+		print ("The OOB score is ",clf.oob_score_)
+		
+		self.confusion(y_pred,self.y_test)
+		print (clf.feature_importances_)
+
+		return (accuracy_score(y_pred,self.y_test))
+
+	def svm_project(self):
+		clf = svm.SVC(class_weight='balanced',cache_size=100,kernel='rbf',gamma='scale',probability=True)
+
+		clf.fit(self.X_train,self.y_train)
+
+		print ("The mean accuracy score for the training data set is ",clf.score(self.X_train,self.y_train))
+
+		y_pred =  clf.predict(self.X_test)
+
+
+
+		print ("The mean accuracy score for the testing data set is ",accuracy_score(y_pred,self.y_test))
+
+		
+	
+		self.confusion(y_pred,self.y_test)
+
+		return (accuracy_score(y_pred,self.y_test))
+
+class plotLine:
+
+	def __init__(self,l_val,val,x_axis):
+
+
+		df = pd.DataFrame()
+
+		df['Principal Components'] = x_axis
+
+		df['Test Accuracy'] = val
+
+		df['label'] = l_val
+
+		self.plot_classifiers(df)
+		
+	def plot_classifiers(self,df):
+
+		sns.set_style("darkgrid")
+
+		sns.lineplot(x="Principal Components", y="Test Accuracy", hue="label", data=df)
+
+		plt.show()
+
 
 
 
@@ -291,13 +464,39 @@ if __name__ == '__main__':
 	#lukk = geneExtractLukk()
 
 	#lukk_frame = lukk.get_frame()
-
 	dataOwn = geneExtractOwn()
+	acc = []
+	label_acc = []
+	#rf_acc = []
+	#svm_acc = []
+	x_axis = []
 
-	own_mat,label = dataOwn.get_frame()
 
-	analyze = extendedAnalysis(own_mat,label)
+	for i in range(4,130):
+		mat = dataOwn.collect_components(i)
 
+		analyze = extendedAnalysis(mat)
+
+		l_val,r_val,s_val = analyze.collect_results()
+
+		acc.append(l_val)
+		label_acc.append('Logistic Regression')
+		acc.append(r_val)
+		label_acc.append('Random Forests')
+		acc.append(s_val)
+		label_acc.append('SVM')
+		x_axis.append(i)
+		x_axis.append(i)
+		x_axis.append(i)
+	
+	figplot = plotLine(label_acc,acc,x_axis)
+
+	#own_mat = dataOwn.get_frame()
+
+	#tsne = tsneAnalysis(own_mat,label)
 	#correlate = correlateDatasets(own_frame,lukk_frame)
+
+	#analyze = extendedAnalysis(own_mat)
+
 
 
