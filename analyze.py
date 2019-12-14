@@ -107,10 +107,12 @@ class geneExtractOwn:
 		X = self.preprocess_remove_text(X)
 		X = np.transpose(X)
 		self.X = X
+		self.components = 4
+		X_pca = self.pca_transformer(self.X)
+		self.data_set(X_pca)
 		
 		
-		
-		#self.pca_plotter()
+		self.pca_plotter()
 		
 		gc.collect()
 		
@@ -132,40 +134,40 @@ class geneExtractOwn:
 
 	def data_set(self,X):
 
-		df_supplement = pd.DataFrame()
+		# df_supplement = pd.DataFrame()
 
-		delete_list = list(range(0,self.components))
+		# delete_list = list(range(0,self.components))
 
-		index = 0
-		for i in range(0,self.components):
+		# index = 0
+		# for i in range(0,self.components):
 
-			col_name = 'pca' + str(i)
-			#print (col_name)
-			#print (np.shape(np.delete(X,[j for j in delete_list if j !=i],axis=1)))
-			k = np.delete(X,[j for j in delete_list if j !=i],axis=1).ravel()
-			#print (len(k))
-			df_supplement[col_name] = k
-			#df_supplement[col_name] = np.delete(X,[j for j in delete_list if j !=i],axis=1).reshape(-1,1)
-			index +=1
-			#print (df_supplement)
+		# 	col_name = 'pca' + str(i)
+		# 	#print (col_name)
+		# 	#print (np.shape(np.delete(X,[j for j in delete_list if j !=i],axis=1)))
+		# 	k = np.delete(X,[j for j in delete_list if j !=i],axis=1).ravel()
+		# 	#print (len(k))
+		# 	df_supplement[col_name] = k
+		# 	#df_supplement[col_name] = np.delete(X,[j for j in delete_list if j !=i],axis=1).reshape(-1,1)
+		# 	index +=1
+		# 	#print (df_supplement)
 
-		col_name = 'pca' + str(index)
-		k = np.delete(X,[j for j in delete_list if j !=index],axis=1).ravel()
+		# col_name = 'pca' + str(index)
+		# k = np.delete(X,[j for j in delete_list if j !=index],axis=1).ravel()
 		
-		return (df_supplement)
+		# return (df_supplement)
 			
 
 
 
 
 
-		#self.df_supplement['pca1'] = np.delete(X,[1,2,3],axis=1)
-		#self.df_supplement['pca1'] = self.df_supplement['pca1'].swifter.apply(self.shift_axis)
-		#self.df_supplement['pca2'] = np.delete(X,[0,2,3],axis=1)
-		#self.df_supplement['pca3'] = np.delete(X,[0,1,3],axis=1)
-		#self.df_supplement['pca3'] = self.df_supplement['pca3'].swifter.apply(self.shift_axis)
-		#self.df_supplement['pca4'] = np.delete(X,[0,1,2],axis=1)
-		#self.df_supplement['pca4'] = self.df_supplement['pca4'].swifter.apply(self.shift_axis)
+		self.df_supplement['pca1'] = np.delete(X,[1,2,3],axis=1).ravel()
+		self.df_supplement['pca1'] = self.df_supplement['pca1'].swifter.apply(self.shift_axis)
+		self.df_supplement['pca2'] = np.delete(X,[0,2,3],axis=1).ravel()
+		self.df_supplement['pca3'] = np.delete(X,[0,1,3],axis=1)
+		self.df_supplement['pca3'] = self.df_supplement['pca3'].swifter.apply(self.shift_axis)
+		self.df_supplement['pca4'] = np.delete(X,[0,1,2],axis=1)
+		self.df_supplement['pca4'] = self.df_supplement['pca4'].swifter.apply(self.shift_axis)
 
 	def liver_sample_initiate(self, x):
 
@@ -203,7 +205,8 @@ class geneExtractOwn:
 	def pca_plotter(self):	
 
 
-		sns.scatterplot(x='pca1',y='pca2',hue='label',data=self.df_supplement)
+		ax = sns.scatterplot(x='pca3',y='pca4',hue='label',data=self.df_supplement)
+		plt.setp(ax.get_legend().get_texts(), fontsize='22')
 		#sns.scatterplot(x='pca3',y='pca4',hue='label',data=self.df_supplement,alpha=0.9)
 		#sns.scatterplot(x=pca1.ravel(),y=pca3.ravel(),color='g')
 		#sns.scatterplot(x=pca1.ravel(),y=pca2.ravel(),color='b',alpha=0.1)
@@ -464,34 +467,38 @@ if __name__ == '__main__':
 	#lukk = geneExtractLukk()
 
 	#lukk_frame = lukk.get_frame()
-	dataOwn = geneExtractOwn()
-	acc = []
-	label_acc = []
-	#rf_acc = []
-	#svm_acc = []
-	x_axis = []
+	# dataOwn = geneExtractOwn()
+	# acc = []
+	# label_acc = []
+	# x_axis = []
 
 
-	for i in range(4,130):
-		mat = dataOwn.collect_components(i)
+	# for i in range(4,130):
+	# 	mat = dataOwn.collect_components(i)
 
-		analyze = extendedAnalysis(mat)
+	# 	analyze = extendedAnalysis(mat)
 
-		l_val,r_val,s_val = analyze.collect_results()
+	# 	l_val,r_val,s_val = analyze.collect_results()
 
-		acc.append(l_val)
-		label_acc.append('Logistic Regression')
-		acc.append(r_val)
-		label_acc.append('Random Forests')
-		acc.append(s_val)
-		label_acc.append('SVM')
-		x_axis.append(i)
-		x_axis.append(i)
-		x_axis.append(i)
+	# 	acc.append(l_val)
+	# 	label_acc.append('Logistic Regression')
+	# 	acc.append(r_val)
+	# 	label_acc.append('Random Forests')
+	# 	acc.append(s_val)
+	# 	label_acc.append('SVM')
+	# 	x_axis.append(i)
+	# 	x_axis.append(i)
+	# 	x_axis.append(i)
 	
-	figplot = plotLine(label_acc,acc,x_axis)
+	# figplot = plotLine(label_acc,acc,x_axis)
 
-	#own_mat = dataOwn.get_frame()
+	
+
+
+
+
+
+	own_mat = geneExtractOwn()
 
 	#tsne = tsneAnalysis(own_mat,label)
 	#correlate = correlateDatasets(own_frame,lukk_frame)
