@@ -12,6 +12,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
+from sklearn.decomposition import TruncatedSVD
+import plotly.express as px
 
 class geneExtractLukk:
 
@@ -103,20 +105,49 @@ class geneExtractOwn:
 
 		df_supplement = pd.DataFrame()
 		
-		X = df.values		
+		X = df.values
+		col = len(X)	
 		X = self.preprocess_remove_text(X)
 		X = np.transpose(X)
 		self.X = X
 		self.components = 4
-		X_pca = self.pca_transformer(self.X)
-		self.data_set(X_pca)
+
+		#self.singdecomposition(self.X,col)
+		# X_pca = self.pca_transformer(self.X)
+		# self.data_set(X_pca)
 		
 		
-		self.pca_plotter()
+		# self.pca_plotter()
 		
 		gc.collect()
 		
 	
+	def singdecomposition(self,a,col):
+		a = np.array(a,dtype='float64')
+		
+		svd = TruncatedSVD(n_components=10, n_iter=7, random_state=42)
+
+
+		svd.fit(a)
+
+		scores = svd.explained_variance_ratio_
+		scores = sorted(scores,reverse=True)
+		rest = 1 - sum(scores)
+		scores.append(rest)
+		df = pd.DataFrame()
+		df['Variability'] = scores
+		pc_list = ['PC1','PC2','PC3','PC4','PC5','PC6','PC7','PC8','PC9','PC10','REST']
+		
+		df['Principal Component'] = pc_list
+
+		ax = plt.pie(df['Variability'],labels=df['Principal Component'],startangle=90,explode=(0.15,0.15,0.15,0.15,0,0,0,0,0,0,0),autopct='%1.1f%%')
+		#plt.setp(ax.get_legend().get_texts(), fontsize='22')
+		plt.show()
+
+
+
+		#print(svd.singular_values_)
+
 
 	def collect_components(self,components):
 
@@ -215,7 +246,7 @@ class geneExtractOwn:
 
 	def get_frame(self):
 
-		return(self.df_supplement)
+		return(self.X,self.df_supplement['label'])
 
 
 class correlateDatasets:
@@ -298,7 +329,7 @@ class tsneAnalysis:
 
 		print (X)
 
-		tsne = TSNE(n_components=2,perplexity=75,learning_rate=10,n_jobs=multiprocessing.cpu_count(),n_iter=5000)
+		tsne = TSNE(n_components=2,perplexity=5,learning_rate=10,n_jobs=multiprocessing.cpu_count(),n_iter=5000)
 
 		Y = tsne.fit_transform(X)
 
@@ -315,7 +346,8 @@ class tsneAnalysis:
 
 	def plot_results(self,df,x,y):
 
-		sns.scatterplot(x=x,y=y,hue='label',data=df)
+		ax = sns.scatterplot(x=x,y=y,hue='label',data=df)
+		plt.setp(ax.get_legend().get_texts(), fontsize='22')
 		plt.show()
 
 	
@@ -460,7 +492,6 @@ class plotLine:
 
 
 
-
 if __name__ == '__main__':
 
 
@@ -496,11 +527,11 @@ if __name__ == '__main__':
 
 
 
+	gene = geneExtractOwn()
 
+	own_mat,label = gene.get_frame()
 
-	own_mat = geneExtractOwn()
-
-	#tsne = tsneAnalysis(own_mat,label)
+	tsne = tsneAnalysis(own_mat,label)
 	#correlate = correlateDatasets(own_frame,lukk_frame)
 
 	#analyze = extendedAnalysis(own_mat)
